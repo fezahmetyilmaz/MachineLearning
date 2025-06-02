@@ -1,0 +1,58 @@
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+
+!pip install ISLP
+from ISLP.models import ModelSpec as MS, summarize,poly
+
+
+np.random.seed(42)
+n=200
+
+books_read = np.random.poisson(5,n)
+hours_practiced = np.random.normal(150,40,n)
+online_research_hours = np.random.normal(100,30,n)
+mentor_support = np.random.choice([0,1],size = n)
+courses_taken = np.random.poisson(2,n)
+
+
+skill_level=(
+    2 * books_read +
+    0.4 * hours_practiced +
+    0.3 * online_research_hours +
+    8 * mentor_support +
+    5 * courses_taken +
+    np.random.normal(0,10,n)  #noise
+
+)
+
+data = pd.DataFrame({
+    'books_read': books_read,
+    'hours_practiced': hours_practiced,
+    'online_research_hours':online_research_hours,
+    'mentor_support':mentor_support,
+    'courses_taken': courses_taken,
+    'skill_level':skill_level
+})
+
+
+y= data['skill_level']
+
+
+design=MS(['books_read',
+           'hours_practiced',
+           'online_research_hours',
+           'mentor_support',
+           'courses_taken',
+            ('hours_practiced','online_research_hours'),
+           poly('books_read',degree=2)
+           ])
+
+
+X=design.fit_transform(data)
+
+model = sm.OLS(y,X)
+results = model.fit()
+
+summarize(results)
