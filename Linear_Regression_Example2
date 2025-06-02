@@ -1,0 +1,35 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import statsmodels.api as sm
+from ISLP.models import ModelSpec as MS, summarize
+
+# Örnek veri oluşturuyoruz
+data = pd.DataFrame({
+    'hours_studied': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    'score': [45, 50, 54, 60, 65, 71, 75, 80, 88, 95]
+})
+
+# Değişkenleri ayarlıyoruz
+y = data['score']
+design = MS(['hours_studied'])       # Modelde hangi değişkeni kullanacağımızı belirtiyoruz
+design = design.fit(data)            # Veriye uydur
+X = design.transform(data)           # Regresyon için X matrisini oluştur
+
+# Modeli kur ve eğit
+model = sm.OLS(y, X)
+results = model.fit()
+
+# Özet çıktısı
+summarize(results)
+
+# Regresyon doğrusunu çizelim
+plt.figure(figsize=(8, 6))
+plt.scatter(data['hours_studied'], data['score'], color='blue', label='Gerçek Veriler')
+plt.plot(data['hours_studied'], results.fittedvalues, color='red', label='Regresyon Doğrusu')
+plt.xlabel("Çalışılan Saat")
+plt.ylabel("Sınav Skoru")
+plt.title("Çalışma Saati vs Sınav Skoru")
+plt.legend()
+plt.grid(True)
+plt.show()
