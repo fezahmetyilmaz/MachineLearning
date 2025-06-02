@@ -1,35 +1,54 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
-from ISLP.models import ModelSpec as MS, summarize
+from ISLP.models import ModelSpec as MS, summarize, poly
 
-# Örnek veri oluşturuyoruz
+# Rastgele veri oluştur
+np.random.seed(0)
+n = 150
+study_hours = np.random.normal(3, 1, n)
+sleep_hours = np.random.normal(7, 1.5, n)
+attendance_rate = np.random.uniform(60, 100, n)
+previous_exam_score = np.random.normal(65, 10, n)
+
+# Gerçek nota benzer sınav puanları üret (biraz rastgelelik içerir)
+exam_score = (
+    10 * study_hours +
+    5 * sleep_hours +
+    0.5 * attendance_rate +
+    0.3 * previous_exam_score +
+    np.random.normal(0, 5, n)  # gürültü (noise)
+)
+
+# DataFrame oluştur
 data = pd.DataFrame({
-    'hours_studied': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    'score': [45, 50, 54, 60, 65, 71, 75, 80, 88, 95]
+    'study_hours': study_hours,
+    'sleep_hours': sleep_hours,
+    'attendance_rate': attendance_rate,
+    'previous_exam_score': previous_exam_score,
+    'exam_score': exam_score
 })
 
-# Değişkenleri ayarlıyoruz
-y = data['score']
-design = MS(['hours_studied'])       # Modelde hangi değişkeni kullanacağımızı belirtiyoruz
-design = design.fit(data)            # Veriye uydur
-X = design.transform(data)           # Regresyon için X matrisini oluştur
+# Hedef değişken
+y = data['exam_score']
 
-# Modeli kur ve eğit
+# Model tasarımı: tüm değişkenler + bazı etkileşim ve polinom terimler
+design = MS([
+    'study_hours',
+    'sleep_hours',
+    'attendance_rate',
+    'previous_exam_score',
+    ('study_hours', 'attendance_rate'),       # etkileşim
+    poly('previous_exam_score', degree=2)     # polinom terim
+])
+
+# Tasarımı uygula
+X = design.fit_transform(data)
+
+# Regresyon modeli oluştur
 model = sm.OLS(y, X)
 results = model.fit()
 
-# Özet çıktısı
+# Sonuçları özetle
 summarize(results)
-
-# Regresyon doğrusunu çizelim
-plt.figure(figsize=(8, 6))
-plt.scatter(data['hours_studied'], data['score'], color='blue', label='Gerçek Veriler')
-plt.plot(data['hours_studied'], results.fittedvalues, color='red', label='Regresyon Doğrusu')
-plt.xlabel("Çalışılan Saat")
-plt.ylabel("Sınav Skoru")
-plt.title("Çalışma Saati vs Sınav Skoru")
-plt.legend()
-plt.grid(True)
-plt.show()
